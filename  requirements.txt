@@ -1,0 +1,6 @@
+flask
+opencv-python
+pillow
+requests
+inference-sdk
+numpy
