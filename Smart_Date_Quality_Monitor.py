@@ -96,7 +96,7 @@ client = InferenceHTTPClient(
 # HuggingFace Vision Model
 # --------------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/xtuner/llava-phi-3-mini-gguf"
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/xtuner/llava-phi-3-mini-gguf"
 
 HF_HEADERS = {
     "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
@@ -174,35 +174,30 @@ def draw_boxes(image_path, predictions):
 def analyze_spoilage(image_path):
 
     with open(image_path, "rb") as f:
-        img_bytes = f.read()
+        image_bytes = f.read()
 
-    img_base64 = base64.b64encode(img_bytes).decode()
+    image_base64 = base64.b64encode(image_bytes).decode()
 
     prompt = """
-You are an expert in date fruit diseases.
+You are a date fruit disease expert.
 
-Look carefully at the image of the date fruit and analyze it.
+Carefully inspect the image of the date fruit.
 
-Return the result EXACTLY in this format:
+Identify the possible spoilage based ONLY on what you see in the image.
 
-Cause of spoilage: ...
-Type of problem: ...
-Visible signs: ...
-Advice for farmers: ...
+Return the result exactly in this format:
 
-Only describe what you visually observe in the image.
+Cause of spoilage:
+Type of problem:
+Visible signs:
+Advice for farmers:
 """
 
     payload = {
-        "inputs": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image", "data": img_base64},
-                    {"type": "text", "text": prompt}
-                ]
-            }
-        ]
+        "inputs": {
+            "prompt": prompt,
+            "image": image_base64
+        }
     }
 
     response = requests.post(
@@ -216,9 +211,8 @@ Only describe what you visually observe in the image.
 
     result = response.json()
 
-    # استخراج النص
-    if isinstance(result, list) and "generated_text" in result[0]:
-        return result[0]["generated_text"]
+    if isinstance(result, dict) and "generated_text" in result:
+        return result["generated_text"]
 
     return str(result)
 # --------------------------------
