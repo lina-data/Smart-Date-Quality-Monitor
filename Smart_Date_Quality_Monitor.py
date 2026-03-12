@@ -91,12 +91,12 @@ rf_client = InferenceHTTPClient(
 # -----------------------------
 
 #HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
-HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip2-opt-2.7b"
+
+HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip2-flan-t5-xl"
 
 HF_HEADERS = {
     "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
 }
-
 # -----------------------------
 # كشف التمور
 # -----------------------------
@@ -165,53 +165,46 @@ def draw_boxes(image_path, predictions):
 # -----------------------------
 # تحليل الفساد
 # -----------------------------
-
 def analyze_spoilage(image_path):
 
-    with open(image_path,"rb") as f:
-        img_bytes=f.read()
+    with open(image_path, "rb") as f:
+        img_bytes = f.read()
 
-    response=requests.post(
+    image_base64 = base64.b64encode(img_bytes).decode()
+
+    prompt = """
+أنت خبير في جودة التمور.
+
+انظر إلى صورة التمرة وحدد ما يلي:
+
+سبب الفساد:
+نوع المشكلة:
+العلامات الظاهرة:
+نصيحة للمزارعين:
+"""
+
+    payload = {
+        "inputs": {
+            "image": image_base64,
+            "question": prompt
+        }
+    }
+
+    response = requests.post(
         HF_API_URL,
         headers=HF_HEADERS,
-        data=img_bytes
+        json=payload
     )
 
-    if response.status_code!=200:
-        return "غير واضح","غير واضح","غير واضح","تحقق من جودة التمور وظروف التخزين."
+    if response.status_code != 200:
+        return "غير واضح"
 
-    result=response.json()
+    result = response.json()
 
-    if isinstance(result,list):
-        caption=result[0]["generated_text"]
-    else:
-        caption="تمرة غير واضحة"
+    if "generated_text" in result:
+        return result["generated_text"]
 
-    # تحليل بسيط للوصف
-
-    caption_lower = caption.lower()
-
-    if "dark" in caption_lower or "black" in caption_lower:
-        cause="احتمال وجود عفن أو تلف في التمرة"
-        problem="عفن فطري محتمل"
-
-    elif "wrinkled" in caption_lower or "dry" in caption_lower:
-        cause="جفاف في التمرة"
-        problem="جفاف أو فقدان رطوبة"
-
-    elif "damaged" in caption_lower:
-        cause="تلف في سطح التمرة"
-        problem="ضرر ميكانيكي"
-
-    else:
-        cause="تغير في مظهر التمرة"
-        problem="فساد محتمل"
-
-    signs=caption
-
-    advice="يفضل إزالة التمور المتضررة وفحص ظروف التخزين مثل الرطوبة ودرجة الحرارة."
-
-    return cause,problem,signs,advice
+    return str(result)
 
 # -----------------------------
 # رفع الصورة
