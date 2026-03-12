@@ -83,36 +83,6 @@ margin-bottom:20px;
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------
-# عرض الهيدر
-# --------------------------------
-
-if img != "":
-    st.markdown(f"""
-    <div style="
-    height:260px;
-    border-radius:14px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:white;
-    font-size:38px;
-    font-weight:bold;
-
-    background:
-    linear-gradient(
-    to bottom,
-    rgba(0,0,0,0) 40%,
-    rgba(58,49,43,0.9) 100%
-    ),
-    url('data:image/jpeg;base64,{img}');
-
-    background-size:cover;
-    background-position:center;
-    ">
-    مراقب جودة التمور الذكي
-    </div>
-    """, unsafe_allow_html=True)
 
 # --------------------------------
 # Roboflow
