@@ -7,6 +7,7 @@ import numpy as np
 import time
 import os
 from inference_sdk import InferenceHTTPClient
+from openai import OpenAI
 
 st.set_page_config(
     page_title="مراقب جودة التمور الذكي",
@@ -96,11 +97,12 @@ client = InferenceHTTPClient(
 # HuggingFace Vision Model
 # --------------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
 
-HF_HEADERS = {
-    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
-}
+
+client = OpenAI(
+    base_url="https://router.huggingface.co/v1",
+    api_key=st.secrets["HF_TOKEN"]
+)
 
 # --------------------------------
 # كشف التمور
@@ -171,35 +173,44 @@ def draw_boxes(image_path, predictions):
 # تحليل الفساد
 # --------------------------------
 
+
 def analyze_spoilage(image_path):
 
     with open(image_path, "rb") as f:
-        img_bytes = f.read()
+        img_base64 = base64.b64encode(f.read()).decode()
 
-    response = requests.post(
-        HF_API_URL,
-        headers=HF_HEADERS,
-        data=img_bytes
+    response = client.chat.completions.create(
+        model="llava-hf/llava-1.5-7b-hf",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{img_base64}"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": """
+You are a date fruit disease expert.
+
+Analyze the date fruit image and return:
+
+Cause of spoilage:
+Type of problem:
+Visible signs:
+Advice for farmers:
+"""
+                    }
+                ]
+            }
+        ],
+        max_tokens=200
     )
 
-    if response.status_code != 200:
-        return f"API Error: {response.text}"
-
-    result = response.json()
-
-    if isinstance(result, list):
-        caption = result[0]["generated_text"]
-    else:
-        return str(result)
-
-    report = f"""
-Cause of spoilage: Possible spoilage observed.
-Type of problem: Visual deterioration.
-Visible signs: {caption}
-Advice for farmers: Inspect storage and remove damaged dates.
-"""
-
-    return report
+    return response.choices[0].message.content
 # --------------------------------
 # رفع الصورة
 # --------------------------------
