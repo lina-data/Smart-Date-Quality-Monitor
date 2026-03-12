@@ -3,6 +3,7 @@ import requests
 import base64
 from PIL import Image
 import cv2
+import os
 import numpy as np
 import time
 from inference_sdk import InferenceHTTPClient
