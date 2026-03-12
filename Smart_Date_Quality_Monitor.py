@@ -181,24 +181,35 @@ def analyze_spoilage(image_path):
 
     result=response.json()
 
-    if isinstance(result,list):
+    # استخراج الوصف الحقيقي
+    if isinstance(result,list) and "generated_text" in result[0]:
         caption=result[0]["generated_text"]
     else:
-        caption="تمرة غير واضحة"
+        caption="لم يتمكن النموذج من وصف الصورة"
 
-    # تحويل الوصف إلى تقرير واضح
+    # تحليل الوصف
 
-    cause = "تغير في مظهر التمرة قد يدل على بداية فساد."
-    
-    problem = "فساد محتمل في التمرة."
+    caption_lower=caption.lower()
 
-    signs = f"الوصف الذي رآه النموذج في الصورة: {caption}"
+    if "dark" in caption_lower or "black" in caption_lower:
+        cause="ظهور بقع داكنة قد يدل على بداية عفن"
+        problem="عفن فطري محتمل"
 
-    advice = """
-يفضل فحص التمور المصابة وعزلها عن التمور الجيدة.
-يجب تخزين التمور في بيئة جافة وباردة لتقليل احتمال نمو العفن.
-كما ينصح بمتابعة الرطوبة أثناء التخزين.
-"""
+    elif "wrinkled" in caption_lower or "dry" in caption_lower:
+        cause="فقدان رطوبة التمرة"
+        problem="جفاف التمرة"
+
+    elif "damaged" in caption_lower:
+        cause="تلف في سطح التمرة"
+        problem="ضرر ميكانيكي"
+
+    else:
+        cause="تغير في مظهر التمرة"
+        problem="فساد محتمل"
+
+    signs=f"الوصف البصري للصورة: {caption}"
+
+    advice="يفضل إزالة التمور المتضررة وتحسين ظروف التخزين وتقليل الرطوبة."
 
     return cause,problem,signs,advice
 
