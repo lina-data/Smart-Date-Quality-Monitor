@@ -167,44 +167,44 @@ def draw_boxes(image_path, predictions):
 # -----------------------------
 def analyze_spoilage(image_path):
 
-    with open(image_path, "rb") as f:
-        img_bytes = f.read()
+    with open(image_path,"rb") as f:
+        img_bytes=f.read()
 
-    image_base64 = base64.b64encode(img_bytes).decode()
-
-    prompt = """
-أنت خبير في جودة التمور.
-
-انظر إلى صورة التمرة وحدد ما يلي:
-
-سبب الفساد:
-نوع المشكلة:
-العلامات الظاهرة:
-نصيحة للمزارعين:
-"""
-
-    payload = {
-        "inputs": {
-            "image": image_base64,
-            "question": prompt
-        }
-    }
-
-    response = requests.post(
+    response=requests.post(
         HF_API_URL,
         headers=HF_HEADERS,
-        json=payload
+        data=img_bytes
     )
 
-    if response.status_code != 200:
-        return "غير واضح"
+    if response.status_code!=200:
+        return "غير واضح","غير واضح","غير واضح","تحقق من ظروف التخزين."
 
-    result = response.json()
+    result=response.json()
 
-    if "generated_text" in result:
-        return result["generated_text"]
+    if isinstance(result,list):
+        caption=result[0]["generated_text"]
+    else:
+        caption="تمرة غير واضحة"
 
-    return str(result)
+    caption_lower=caption.lower()
+
+    if "dark" in caption_lower or "black" in caption_lower:
+        cause="وجود بقع داكنة قد يدل على بداية عفن"
+        problem="عفن محتمل"
+
+    elif "wrinkled" in caption_lower or "dry" in caption_lower:
+        cause="فقدان رطوبة التمرة"
+        problem="جفاف التمرة"
+
+    else:
+        cause="تغير في مظهر التمرة"
+        problem="فساد محتمل"
+
+    signs=caption
+
+    advice="ينصح بفرز التمور التالفة وتقليل الرطوبة أثناء التخزين."
+
+    return cause,problem,signs,advice
 
 # -----------------------------
 # رفع الصورة
