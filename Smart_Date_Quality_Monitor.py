@@ -96,10 +96,11 @@ client = InferenceHTTPClient(
 # HuggingFace Vision Model
 # --------------------------------
 
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/xtuner/llava-phi-3-mini-gguf"
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/llava-hf/llava-next-video-7b-hf"
 
 HF_HEADERS = {
-    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
+    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}",
+    "Content-Type": "application/json"
 }
 
 # --------------------------------
@@ -174,30 +175,43 @@ def draw_boxes(image_path, predictions):
 def analyze_spoilage(image_path):
 
     with open(image_path, "rb") as f:
-        image_bytes = f.read()
+        img_bytes = f.read()
 
-    image_base64 = base64.b64encode(image_bytes).decode()
+    img_base64 = base64.b64encode(img_bytes).decode()
 
     prompt = """
-You are a date fruit disease expert.
+You are an expert in date fruit diseases.
 
-Carefully inspect the image of the date fruit.
+Look carefully at the date fruit image and analyze it.
 
-Identify the possible spoilage based ONLY on what you see in the image.
-
-Return the result exactly in this format:
+Return EXACTLY in this format:
 
 Cause of spoilage:
 Type of problem:
 Visible signs:
 Advice for farmers:
+
+Base your answer only on what you visually observe in the image.
 """
 
     payload = {
-        "inputs": {
-            "prompt": prompt,
-            "image": image_base64
-        }
+        "inputs": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{img_base64}"
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt
+                    }
+                ]
+            }
+        ]
     }
 
     response = requests.post(
@@ -211,8 +225,12 @@ Advice for farmers:
 
     result = response.json()
 
+    # استخراج النص الناتج
     if isinstance(result, dict) and "generated_text" in result:
         return result["generated_text"]
+
+    if isinstance(result, list) and "generated_text" in result[0]:
+        return result[0]["generated_text"]
 
     return str(result)
 # --------------------------------
