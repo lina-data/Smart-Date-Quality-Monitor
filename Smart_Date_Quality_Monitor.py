@@ -54,9 +54,8 @@ st.markdown("""
 .ai-card{
 background:white;
 padding:20px;
-border-radius:15px;
-box-shadow:0 6px 20px rgba(0,0,0,0.08);
-border-left:6px solid #E8C75B;
+border-radius:16px;
+box-shadow:0 8px 20px rgba(0,0,0,0.08);
 margin-bottom:20px;
 }
 
@@ -178,16 +177,25 @@ def analyze_spoilage(image_path):
     )
 
     if response.status_code!=200:
-        return "تعذر تحليل الصورة"
+        return "غير واضح","غير واضح","غير واضح","تحقق من جودة التمور وظروف التخزين."
 
     result=response.json()
 
     if isinstance(result,list):
         caption=result[0]["generated_text"]
     else:
-        caption="صورة تمر غير واضحة"
+        caption="تمرة غير واضحة"
 
-    return caption
+    # -----------------------------
+    # Prompt عربي لتحليل الوصف
+    # -----------------------------
+
+    cause="فساد محتمل في التمرة"
+    problem="تلف أو تغير في المظهر"
+    signs=caption
+    advice="يفضل إزالة التمور التالفة وتحسين ظروف التخزين وتقليل الرطوبة."
+
+    return cause,problem,signs,advice
 
 # -----------------------------
 # رفع الصورة
@@ -274,7 +282,7 @@ if bad_dates:
 
         for img_path in bad_dates:
 
-            description=analyze_spoilage(img_path)
+            cause,problem,signs,advice=analyze_spoilage(img_path)
 
             st.markdown("### 🧠 تقرير الذكاء الاصطناعي")
 
@@ -282,16 +290,34 @@ if bad_dates:
 
             with col1:
                 st.markdown(f"""
-                <div class="ai-card">
-                <h4>الوصف البصري</h4>
-                {description}
+                <div class="ai-card" style="border-left:6px solid #E53935">
+                <h4>🦠 سبب الفساد</h4>
+                {cause}
                 </div>
                 """,unsafe_allow_html=True)
 
             with col2:
-                st.markdown("""
-                <div class="ai-card">
-                <h4>نصيحة للمزارعين</h4>
-                افحص التمور المصابة وتأكد من ظروف التخزين والرطوبة.
+                st.markdown(f"""
+                <div class="ai-card" style="border-left:6px solid #FB8C00">
+                <h4>⚠️ نوع المشكلة</h4>
+                {problem}
+                </div>
+                """,unsafe_allow_html=True)
+
+            col3,col4=st.columns(2)
+
+            with col3:
+                st.markdown(f"""
+                <div class="ai-card" style="border-left:6px solid #1E88E5">
+                <h4>🔎 العلامات الظاهرة</h4>
+                {signs}
+                </div>
+                """,unsafe_allow_html=True)
+
+            with col4:
+                st.markdown(f"""
+                <div class="ai-card" style="border-left:6px solid #43A047">
+                <h4>🌱 نصيحة للمزارعين</h4>
+                {advice}
                 </div>
                 """,unsafe_allow_html=True)
