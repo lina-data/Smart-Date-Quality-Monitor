@@ -8,25 +8,41 @@ import time
 import os
 from inference_sdk import InferenceHTTPClient
 
-# --------------------------------
-# إعداد الصفحة
-# --------------------------------
-
 st.set_page_config(
     page_title="مراقب جودة التمور الذكي",
     layout="wide"
 )
 
 # --------------------------------
-# تحميل صورة الهيدر
+# صورة الهيدر
 # --------------------------------
 
 HEADER_IMAGE = "header3.jpeg"
 
-img = ""
 if os.path.exists(HEADER_IMAGE):
     with open(HEADER_IMAGE, "rb") as f:
         img = base64.b64encode(f.read()).decode()
+else:
+    img = ""
+
+st.markdown(f"""
+<div style="
+height:260px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:36px;
+font-weight:bold;
+color:white;
+border-radius:15px;
+background:
+linear-gradient(to bottom,rgba(0,0,0,0) 50%,rgba(58,49,43,0.9) 100%),
+url('data:image/jpeg;base64,{img}');
+background-size:cover;
+background-position:center;">
+مراقب جودة التمور الذكي
+</div>
+""", unsafe_allow_html=True)
 
 # --------------------------------
 # CSS
