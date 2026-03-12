@@ -186,23 +186,19 @@ def analyze_spoilage(image_path):
     else:
         caption="تمرة غير واضحة"
 
-    caption_lower=caption.lower()
+    # تحويل الوصف إلى تقرير واضح
 
-    if "dark" in caption_lower or "black" in caption_lower:
-        cause="وجود بقع داكنة قد يدل على بداية عفن"
-        problem="عفن محتمل"
+    cause = "تغير في مظهر التمرة قد يدل على بداية فساد."
+    
+    problem = "فساد محتمل في التمرة."
 
-    elif "wrinkled" in caption_lower or "dry" in caption_lower:
-        cause="فقدان رطوبة التمرة"
-        problem="جفاف التمرة"
+    signs = f"الوصف الذي رآه النموذج في الصورة: {caption}"
 
-    else:
-        cause="تغير في مظهر التمرة"
-        problem="فساد محتمل"
-
-    signs=caption
-
-    advice="ينصح بفرز التمور التالفة وتقليل الرطوبة أثناء التخزين."
+    advice = """
+يفضل فحص التمور المصابة وعزلها عن التمور الجيدة.
+يجب تخزين التمور في بيئة جافة وباردة لتقليل احتمال نمو العفن.
+كما ينصح بمتابعة الرطوبة أثناء التخزين.
+"""
 
     return cause,problem,signs,advice
 
