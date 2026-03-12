@@ -11,11 +11,26 @@ from inference_sdk import InferenceHTTPClient
 # إعداد الصفحة
 # -----------------------------
 
+# --------------------------------
+# إعداد الصفحة
+# --------------------------------
+
 st.set_page_config(
     page_title="مراقب جودة التمور الذكي",
     layout="wide"
 )
 
+# --------------------------------
+# صورة الهيدر
+# --------------------------------
+
+HEADER_IMAGE = "header3.jpeg"
+
+if os.path.exists(HEADER_IMAGE):
+    with open(HEADER_IMAGE, "rb") as f:
+        img = base64.b64encode(f.read()).decode()
+else:
+    img = ""
 # -----------------------------
 # CSS للتصميم
 # -----------------------------
@@ -282,71 +297,78 @@ if image:
     # -----------------------------
     # تحليل الفساد
     # -----------------------------
+# --------------------------------
+# تحليل الفساد
+# --------------------------------
 
-    if bad_dates:
+if bad_dates:
 
-        st.markdown(
-        "<h2 class='center-title'>🧠 تقرير الذكاء الاصطناعي</h2>",
-        unsafe_allow_html=True
-        )
+    col1, col2, col3 = st.columns([1,2,1])
+
+    with col2:
+        analyze = st.button("🔍 تحليل التمور الفاسدة", use_container_width=True)
+
+    if analyze:
 
         for img_path in bad_dates:
 
             report = analyze_spoilage(img_path)
 
-            cause=""
-            problem=""
-            signs=""
-            advice=""
+            cause = ""
+            problem = ""
+            signs = ""
+            advice = ""
 
             for line in report.split("\n"):
 
-                line=line.lower()
+                line_lower = line.lower()
 
-                if "cause" in line:
-                    cause=line.split(":")[-1]
+                if "cause of spoilage" in line_lower:
+                    cause = line.split(":",1)[-1].strip()
 
-                elif "type" in line:
-                    problem=line.split(":")[-1]
+                elif "type of problem" in line_lower:
+                    problem = line.split(":",1)[-1].strip()
 
-                elif "visible" in line:
-                    signs=line.split(":")[-1]
+                elif "visible signs" in line_lower:
+                    signs = line.split(":",1)[-1].strip()
 
-                elif "advice" in line:
-                    advice=line.split(":")[-1]
+                elif "advice" in line_lower:
+                    advice = line.split(":",1)[-1].strip()
 
-            col1,col2 = st.columns(2)
+            st.markdown("### 🧠 تقرير الذكاء الاصطناعي")
+
+            col1, col2 = st.columns(2)
 
             with col1:
                 st.markdown(f"""
                 <div class="ai-card">
-                <h4>سبب الفساد</h4>
-                {cause}
+                    <h4>سبب الفساد</h4>
+                    {cause}
                 </div>
-                """,unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
             with col2:
                 st.markdown(f"""
                 <div class="ai-card">
-                <h4>نوع المشكلة</h4>
-                {problem}
+                    <h4>نوع المشكلة</h4>
+                    {problem}
                 </div>
-                """,unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
-            col3,col4 = st.columns(2)
+            col3, col4 = st.columns(2)
 
             with col3:
                 st.markdown(f"""
                 <div class="ai-card">
-                <h4>العلامات الظاهرة</h4>
-                {signs}
+                    <h4>العلامات الظاهرة</h4>
+                    {signs}
                 </div>
-                """,unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
             with col4:
                 st.markdown(f"""
                 <div class="ai-card">
-                <h4>نصيحة للمزارعين</h4>
-                {advice}
+                    <h4>نصيحة للمزارعين</h4>
+                    {advice}
                 </div>
-                """,unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
