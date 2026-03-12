@@ -174,12 +174,12 @@ def draw_boxes(image_path, predictions):
 def analyze_spoilage(image_path):
 
     with open(image_path, "rb") as f:
-        data = f.read()
+        img_bytes = f.read()
 
     response = requests.post(
         HF_API_URL,
         headers=HF_HEADERS,
-        data=data
+        data=img_bytes
     )
 
     if response.status_code != 200:
@@ -188,18 +188,15 @@ def analyze_spoilage(image_path):
     result = response.json()
 
     if isinstance(result, list):
-        description = result[0]["generated_text"]
+        caption = result[0]["generated_text"]
     else:
         return str(result)
 
     report = f"""
-Cause of spoilage: Possible deterioration observed.
-
-Type of problem: Visual damage.
-
-Visible signs: {description}
-
-Advice for farmers: Inspect storage conditions and remove damaged fruits.
+Cause of spoilage: Possible spoilage observed.
+Type of problem: Visual deterioration.
+Visible signs: {caption}
+Advice for farmers: Inspect storage and remove damaged dates.
 """
 
     return report
