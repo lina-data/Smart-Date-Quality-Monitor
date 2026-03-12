@@ -7,16 +7,15 @@ import numpy as np
 import time
 import os
 from inference_sdk import InferenceHTTPClient
-from openai import OpenAI
 
 st.set_page_config(
     page_title="مراقب جودة التمور الذكي",
     layout="wide"
 )
 
-# --------------------------------
+# -----------------------------
 # صورة الهيدر
-# --------------------------------
+# -----------------------------
 
 HEADER_IMAGE = "header3.jpeg"
 
@@ -45,9 +44,9 @@ background-position:center;">
 </div>
 """, unsafe_allow_html=True)
 
-# --------------------------------
+# -----------------------------
 # CSS
-# --------------------------------
+# -----------------------------
 
 st.markdown("""
 <style>
@@ -59,11 +58,6 @@ border-radius:15px;
 box-shadow:0 6px 20px rgba(0,0,0,0.08);
 border-left:6px solid #E8C75B;
 margin-bottom:20px;
-}
-
-.ai-card h4{
-color:#3A312B;
-margin-bottom:10px;
 }
 
 .upload-box{
@@ -84,28 +78,28 @@ margin-bottom:20px;
 </style>
 """, unsafe_allow_html=True)
 
-
-# --------------------------------
+# -----------------------------
 # Roboflow
-# --------------------------------
+# -----------------------------
 
 rf_client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
-    api_key="C1JPPLBr70pBEnS1eNl8"
+    api_key="YOUR_ROBOFLOW_KEY"
 )
 
+# -----------------------------
+# HuggingFace BLIP
+# -----------------------------
 
-# --------------------------------
-# HuggingFace Vision Model
-# --------------------------------
-hf_client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=st.secrets["HF_TOKEN"]
-)
+HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
 
-# --------------------------------
+HF_HEADERS = {
+    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
+}
+
+# -----------------------------
 # كشف التمور
-# --------------------------------
+# -----------------------------
 
 def detect_dates(image_path):
 
@@ -116,93 +110,88 @@ def detect_dates(image_path):
 
     return result.get("predictions", [])
 
-# --------------------------------
+# -----------------------------
 # رسم المربعات
-# --------------------------------
+# -----------------------------
 
 def draw_boxes(image_path, predictions):
 
     img = cv2.imread(image_path)
 
-    bad_crops = []
-    good_count = 0
-    bad_count = 0
+    bad_crops=[]
+    good_count=0
+    bad_count=0
 
-    for i, p in enumerate(predictions):
+    for i,p in enumerate(predictions):
 
-        x = int(p["x"])
-        y = int(p["y"])
-        w = int(p["width"])
-        h = int(p["height"])
+        x=int(p["x"])
+        y=int(p["y"])
+        w=int(p["width"])
+        h=int(p["height"])
 
-        label = p["class"]
+        label=p["class"]
 
-        x1 = int(x - w/2)
-        y1 = int(y - h/2)
-        x2 = int(x + w/2)
-        y2 = int(y + h/2)
+        x1=int(x-w/2)
+        y1=int(y-h/2)
+        x2=int(x+w/2)
+        y2=int(y+h/2)
 
-        x1 = max(0, x1)
-        y1 = max(0, y1)
-        x2 = min(img.shape[1], x2)
-        y2 = min(img.shape[0], y2)
+        x1=max(0,x1)
+        y1=max(0,y1)
+        x2=min(img.shape[1],x2)
+        y2=min(img.shape[0],y2)
 
-        color = (0,255,0)
+        color=(0,255,0)
 
         if "bad" in label.lower():
 
-            color = (255,0,0)
-            bad_count += 1
+            color=(255,0,0)
+            bad_count+=1
 
-            crop = img[y1:y2, x1:x2]
+            crop=img[y1:y2,x1:x2]
 
-            filename = f"bad_date_{i}.jpg"
-            cv2.imwrite(filename, crop)
+            filename=f"bad_date_{i}.jpg"
+            cv2.imwrite(filename,crop)
 
             bad_crops.append(filename)
 
         else:
-            good_count += 1
+            good_count+=1
 
         cv2.rectangle(img,(x1,y1),(x2,y2),color,2)
 
-    return img, bad_crops, good_count, bad_count
+    return img,bad_crops,good_count,bad_count
 
-# --------------------------------
+# -----------------------------
 # تحليل الفساد
-# --------------------------------
+# -----------------------------
 
 def analyze_spoilage(image_path):
 
-    with open(image_path, "rb") as f:
-        img_base64 = base64.b64encode(f.read()).decode()
+    with open(image_path,"rb") as f:
+        img_bytes=f.read()
 
-    response = hf_client.chat.completions.create(
-        model="llava-hf/llava-1.5-7b-hf",
-        messages=[
-            {
-                "role":"user",
-                "content":[
-                    {
-                        "type":"image_url",
-                        "image_url":{
-                            "url":f"data:image/jpeg;base64,{img_base64}"
-                        }
-                    },
-                    {
-                        "type":"text",
-                        "text":"Analyze the date fruit and explain the spoilage."
-                    }
-                ]
-            }
-        ],
-        max_tokens=200
+    response=requests.post(
+        HF_API_URL,
+        headers=HF_HEADERS,
+        data=img_bytes
     )
 
-    return response.choices[0].message.content
-# --------------------------------
+    if response.status_code!=200:
+        return "تعذر تحليل الصورة"
+
+    result=response.json()
+
+    if isinstance(result,list):
+        caption=result[0]["generated_text"]
+    else:
+        caption="صورة تمر غير واضحة"
+
+    return caption
+
+# -----------------------------
 # رفع الصورة
-# --------------------------------
+# -----------------------------
 
 st.markdown("""
 <div class="upload-box">
@@ -210,152 +199,99 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+col1,col2=st.columns(2)
 
 with col1:
-    file = st.file_uploader(
-        "رفع صورة",
-        type=["jpg","png","jpeg"]
-    )
+    file=st.file_uploader("رفع صورة",type=["jpg","png","jpeg"])
 
 with col2:
-    camera = st.camera_input(
-        "التقاط صورة"
-    )
+    camera=st.camera_input("التقاط صورة")
 
-image = None
+image=None
 
 if file:
-    image = Image.open(file).convert("RGB")
+    image=Image.open(file).convert("RGB")
 
 elif camera:
-    image = Image.open(camera).convert("RGB")
+    image=Image.open(camera).convert("RGB")
 
-# --------------------------------
+# -----------------------------
 # تحليل الصورة
-# --------------------------------
+# -----------------------------
 
-bad_dates = []
+bad_dates=[]
 
 if image:
 
-    IMAGE_PATH = "date.jpg"
+    IMAGE_PATH="date.jpg"
     image.save(IMAGE_PATH)
 
-    col1, col2 = st.columns(2)
+    col1,col2=st.columns(2)
 
     with col1:
-        st.image(image, caption="الصورة الأصلية")
+        st.image(image,caption="الصورة الأصلية")
 
     with st.spinner("🤖 الذكاء الاصطناعي يحلل الصورة..."):
 
-        progress = st.progress(0)
+        predictions=detect_dates(IMAGE_PATH)
 
-        for i in range(100):
-            time.sleep(0.01)
-            progress.progress(i+1)
-
-        predictions = detect_dates(IMAGE_PATH)
-
-        annotated, bad_dates, good_count, bad_count = draw_boxes(
+        annotated,bad_dates,good_count,bad_count=draw_boxes(
             IMAGE_PATH,
             predictions
         )
 
-        annotated = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
+        annotated=cv2.cvtColor(annotated,cv2.COLOR_BGR2RGB)
 
     with col2:
-        st.image(annotated, caption="نتيجة الكشف")
+        st.image(annotated,caption="نتيجة الكشف")
 
-    st.markdown("<h2 class='center-title'>📊 النتائج</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 class='center-title'>📊 النتائج</h2>",unsafe_allow_html=True)
 
-    total = good_count + bad_count
+    total=good_count+bad_count
 
-    quality = 0
-    if total > 0:
-        quality = (good_count / total) * 100
+    quality=0
+    if total>0:
+        quality=(good_count/total)*100
 
-    colA, colB, colC = st.columns(3)
+    colA,colB,colC=st.columns(3)
 
-    colA.metric("التمور الجيدة", good_count)
-    colB.metric("التمور الفاسدة", bad_count)
-    colC.metric("جودة المحصول", f"{quality:.1f}%")
+    colA.metric("التمور الجيدة",good_count)
+    colB.metric("التمور الفاسدة",bad_count)
+    colC.metric("جودة المحصول",f"{quality:.1f}%")
 
-# --------------------------------
-# تحليل الفساد
-# --------------------------------
+# -----------------------------
+# تحليل التمور الفاسدة
+# -----------------------------
 
 if bad_dates:
 
-    col1, col2, col3 = st.columns([1,2,1])
+    col1,col2,col3=st.columns([1,2,1])
 
     with col2:
-        analyze = st.button("🔍 تحليل التمور الفاسدة", use_container_width=True)
+        analyze=st.button("🔍 تحليل التمور الفاسدة",use_container_width=True)
 
     if analyze:
 
         for img_path in bad_dates:
 
-            report = analyze_spoilage(img_path)
-
-            st.write("AI response:")
-            st.write(report)
-
-            cause = ""
-            problem = ""
-            signs = ""
-            advice = ""
-
-            for line in report.split("\n"):
-
-                line_lower = line.lower()
-
-                if "cause of spoilage" in line_lower:
-                    cause = line.split(":",1)[-1].strip()
-
-                elif "type of problem" in line_lower:
-                    problem = line.split(":",1)[-1].strip()
-
-                elif "visible signs" in line_lower:
-                    signs = line.split(":",1)[-1].strip()
-
-                elif "advice for farmers" in line_lower:
-                    advice = line.split(":",1)[-1].strip()
+            description=analyze_spoilage(img_path)
 
             st.markdown("### 🧠 تقرير الذكاء الاصطناعي")
 
-            col1, col2 = st.columns(2)
+            col1,col2=st.columns(2)
 
             with col1:
                 st.markdown(f"""
                 <div class="ai-card">
-                <h4>سبب الفساد</h4>
-                {cause}
+                <h4>الوصف البصري</h4>
+                {description}
                 </div>
-                """, unsafe_allow_html=True)
+                """,unsafe_allow_html=True)
 
             with col2:
-                st.markdown(f"""
-                <div class="ai-card">
-                <h4>نوع المشكلة</h4>
-                {problem}
-                </div>
-                """, unsafe_allow_html=True)
-
-            col3, col4 = st.columns(2)
-
-            with col3:
-                st.markdown(f"""
-                <div class="ai-card">
-                <h4>العلامات الظاهرة</h4>
-                {signs}
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col4:
-                st.markdown(f"""
+                st.markdown("""
                 <div class="ai-card">
                 <h4>نصيحة للمزارعين</h4>
-                {advice}
+                افحص التمور المصابة وتأكد من ظروف التخزين والرطوبة.
                 </div>
-                """, unsafe_allow_html=True)
+                """,unsafe_allow_html=True)
