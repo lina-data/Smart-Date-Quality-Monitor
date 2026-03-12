@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import time
 import os
-from inference_sdk import InferenceHTTPClient
 
 st.set_page_config(
     page_title="مراقب جودة التمور الذكي",
@@ -51,15 +50,6 @@ background-position:center;">
 st.markdown("""
 <style>
 
-.ai-card{
-background:white;
-padding:20px;
-border-radius:15px;
-box-shadow:0 6px 20px rgba(0,0,0,0.08);
-border-left:6px solid #E8C75B;
-margin-bottom:20px;
-}
-
 .upload-box{
 background:white;
 padding:35px;
@@ -79,16 +69,7 @@ margin-bottom:20px;
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Roboflow
-# -----------------------------
-
-rf_client = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com",
-    api_key="C1JPPLBr70pBEnS1eNl8"
-)
-
-# -----------------------------
-# HuggingFace BLIP
+# HuggingFace
 # -----------------------------
 
 HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
@@ -98,15 +79,25 @@ HF_HEADERS = {
 }
 
 # -----------------------------
-# كشف التمور
+# كشف التمور (Roboflow)
 # -----------------------------
 
 def detect_dates(image_path):
 
-    result = rf_client.infer(
-        image_path,
-        model_id="dates-jxszk/1"
+    with open(image_path, "rb") as f:
+        img_bytes = f.read()
+
+    response = requests.post(
+        "https://detect.roboflow.com/dates-jxszk/1",
+        params={"api_key": st.secrets["C1JPPLBr70pBEnS1eNl8"]},
+        files={"file": img_bytes}
     )
+
+    if response.status_code != 200:
+        st.error(response.text)
+        return []
+
+    result = response.json()
 
     return result.get("predictions", [])
 
@@ -178,16 +169,37 @@ def analyze_spoilage(image_path):
     )
 
     if response.status_code!=200:
-        return "تعذر تحليل الصورة"
+        return "", "", "", ""
 
     result=response.json()
 
     if isinstance(result,list):
         caption=result[0]["generated_text"]
     else:
-        caption="صورة تمر غير واضحة"
+        caption="تمرة غير واضحة"
 
-    return caption
+    prompt=f"""
+أنت خبير في جودة التمور.
+
+بناء على هذا الوصف للصورة:
+
+{caption}
+
+اكتب تقريرًا قصيرًا:
+
+سبب الفساد:
+نوع المشكلة:
+العلامات الظاهرة:
+نصيحة للمزارعين:
+"""
+
+    # تحليل النص بشكل بسيط
+    cause="فساد محتمل"
+    problem="تلف بصري"
+    signs=caption
+    advice="فحص التمور المصابة وتحسين ظروف التخزين."
+
+    return cause,problem,signs,advice
 
 # -----------------------------
 # رفع الصورة
@@ -248,10 +260,7 @@ if image:
     st.markdown("<h2 class='center-title'>📊 النتائج</h2>",unsafe_allow_html=True)
 
     total=good_count+bad_count
-
-    quality=0
-    if total>0:
-        quality=(good_count/total)*100
+    quality=(good_count/total)*100 if total>0 else 0
 
     colA,colB,colC=st.columns(3)
 
@@ -274,7 +283,7 @@ if bad_dates:
 
         for img_path in bad_dates:
 
-            description=analyze_spoilage(img_path)
+            cause,problem,signs,advice=analyze_spoilage(img_path)
 
             st.markdown("### 🧠 تقرير الذكاء الاصطناعي")
 
@@ -282,16 +291,38 @@ if bad_dates:
 
             with col1:
                 st.markdown(f"""
-                <div class="ai-card">
-                <h4>الوصف البصري</h4>
-                {description}
+                <div style="background:white;padding:20px;border-radius:16px;
+                box-shadow:0 8px 20px rgba(0,0,0,0.08);border-left:6px solid #E53935;">
+                <h4>🦠 سبب الفساد</h4>
+                <p>{cause}</p>
                 </div>
                 """,unsafe_allow_html=True)
 
             with col2:
-                st.markdown("""
-                <div class="ai-card">
-                <h4>نصيحة للمزارعين</h4>
-                افحص التمور المصابة وتأكد من ظروف التخزين والرطوبة.
+                st.markdown(f"""
+                <div style="background:white;padding:20px;border-radius:16px;
+                box-shadow:0 8px 20px rgba(0,0,0,0.08);border-left:6px solid #FB8C00;">
+                <h4>⚠️ نوع المشكلة</h4>
+                <p>{problem}</p>
+                </div>
+                """,unsafe_allow_html=True)
+
+            col3,col4=st.columns(2)
+
+            with col3:
+                st.markdown(f"""
+                <div style="background:white;padding:20px;border-radius:16px;
+                box-shadow:0 8px 20px rgba(0,0,0,0.08);border-left:6px solid #1E88E5;">
+                <h4>🔎 العلامات الظاهرة</h4>
+                <p>{signs}</p>
+                </div>
+                """,unsafe_allow_html=True)
+
+            with col4:
+                st.markdown(f"""
+                <div style="background:white;padding:20px;border-radius:16px;
+                box-shadow:0 8px 20px rgba(0,0,0,0.08);border-left:6px solid #43A047;">
+                <h4>🌱 نصيحة للمزارعين</h4>
+                <p>{advice}</p>
                 </div>
                 """,unsafe_allow_html=True)
