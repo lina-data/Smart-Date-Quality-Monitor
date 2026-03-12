@@ -90,7 +90,8 @@ rf_client = InferenceHTTPClient(
 # HuggingFace BLIP
 # -----------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
+#HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
+HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip2-opt-2.7b"
 
 HF_HEADERS = {
     "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
