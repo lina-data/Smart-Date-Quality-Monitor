@@ -173,33 +173,36 @@ def draw_boxes(image_path, predictions):
 
 def analyze_spoilage(image_path):
 
-    with open(image_path,"rb") as f:
-        image_bytes = f.read()
+    with open(image_path, "rb") as f:
+        img_bytes = f.read()
 
-    image_base64 = base64.b64encode(image_bytes).decode()
+    img_base64 = base64.b64encode(img_bytes).decode()
 
     prompt = """
-You are an agricultural expert specializing in date fruit diseases.
+You are an expert in date fruit diseases.
 
-Look carefully at the image of the date fruit.
+Look carefully at the image of the date fruit and analyze it.
 
-Your task is to analyze the image and determine possible spoilage.
+Return the result EXACTLY in this format:
 
-Return the result exactly in this format:
+Cause of spoilage: ...
+Type of problem: ...
+Visible signs: ...
+Advice for farmers: ...
 
-Cause of spoilage:
-Type of problem:
-Visible signs:
-Advice for farmers:
-
-Base your answer only on what you visually see in the image.
+Only describe what you visually observe in the image.
 """
 
     payload = {
-        "inputs":{
-            "image": image_base64,
-            "text": prompt
-        }
+        "inputs": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "data": img_base64},
+                    {"type": "text", "text": prompt}
+                ]
+            }
+        ]
     }
 
     response = requests.post(
@@ -209,15 +212,15 @@ Base your answer only on what you visually see in the image.
     )
 
     if response.status_code != 200:
-        return "Image analysis failed"
+        return f"API Error: {response.text}"
 
     result = response.json()
 
-    if isinstance(result,list):
+    # استخراج النص
+    if isinstance(result, list) and "generated_text" in result[0]:
         return result[0]["generated_text"]
 
     return str(result)
-
 # --------------------------------
 # رفع الصورة
 # --------------------------------
