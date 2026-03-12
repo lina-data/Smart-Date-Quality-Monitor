@@ -90,9 +90,8 @@ margin-bottom:20px;
 
 client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
-    api_key="YOUR_ROBOFLOW_API_KEY"
+    api_key="C1JPPLBr70pBEnS1eNl8"
 )
-
 # --------------------------------
 # HuggingFace Vision Model
 # --------------------------------
