@@ -84,7 +84,7 @@ margin-bottom:20px;
 
 rf_client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
-    api_key="YOUR_ROBOFLOW_KEY"
+    api_key="C1JPPLBr70pBEnS1eNl8"
 )
 
 # -----------------------------
