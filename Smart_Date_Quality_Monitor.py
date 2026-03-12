@@ -186,14 +186,29 @@ def analyze_spoilage(image_path):
     else:
         caption="تمرة غير واضحة"
 
-    # -----------------------------
-    # Prompt عربي لتحليل الوصف
-    # -----------------------------
+    # تحليل بسيط للوصف
 
-    cause="فساد محتمل في التمرة"
-    problem="تلف أو تغير في المظهر"
+    caption_lower = caption.lower()
+
+    if "dark" in caption_lower or "black" in caption_lower:
+        cause="احتمال وجود عفن أو تلف في التمرة"
+        problem="عفن فطري محتمل"
+
+    elif "wrinkled" in caption_lower or "dry" in caption_lower:
+        cause="جفاف في التمرة"
+        problem="جفاف أو فقدان رطوبة"
+
+    elif "damaged" in caption_lower:
+        cause="تلف في سطح التمرة"
+        problem="ضرر ميكانيكي"
+
+    else:
+        cause="تغير في مظهر التمرة"
+        problem="فساد محتمل"
+
     signs=caption
-    advice="يفضل إزالة التمور التالفة وتحسين ظروف التخزين وتقليل الرطوبة."
+
+    advice="يفضل إزالة التمور المتضررة وفحص ظروف التخزين مثل الرطوبة ودرجة الحرارة."
 
     return cause,problem,signs,advice
 
