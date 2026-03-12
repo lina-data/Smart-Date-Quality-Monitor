@@ -96,7 +96,7 @@ client = InferenceHTTPClient(
 # HuggingFace Vision Model
 # --------------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/HuggingFaceM4/idefics2-8b-chatty"
+HF_API_URL = "https://api-inference.huggingface.co/models/xtuner/llava-phi-3-mini-gguf"
 
 HF_HEADERS = {
     "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
@@ -319,13 +319,13 @@ if bad_dates:
 
             report = analyze_spoilage(img_path)
 
-            st.write("Model raw response:")
+            st.write("AI response:")
             st.write(report)
 
-            cause=""
-            problem=""
-            signs=""
-            advice=""
+            cause = ""
+            problem = ""
+            signs = ""
+            advice = ""
 
             for line in report.split("\n"):
 
