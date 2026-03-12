@@ -89,17 +89,16 @@ margin-bottom:20px;
 # Roboflow
 # --------------------------------
 
-client = InferenceHTTPClient(
+rf_client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
     api_key="C1JPPLBr70pBEnS1eNl8"
 )
+
+
 # --------------------------------
 # HuggingFace Vision Model
 # --------------------------------
-
-
-
-client = OpenAI(
+hf_client = OpenAI(
     base_url="https://router.huggingface.co/v1",
     api_key=st.secrets["HF_TOKEN"]
 )
@@ -110,7 +109,7 @@ client = OpenAI(
 
 def detect_dates(image_path):
 
-    result = client.infer(
+    result = rf_client.infer(
         image_path,
         model_id="dates-jxszk/1"
     )
@@ -173,36 +172,26 @@ def draw_boxes(image_path, predictions):
 # تحليل الفساد
 # --------------------------------
 
-
 def analyze_spoilage(image_path):
 
     with open(image_path, "rb") as f:
         img_base64 = base64.b64encode(f.read()).decode()
 
-    response = client.chat.completions.create(
+    response = hf_client.chat.completions.create(
         model="llava-hf/llava-1.5-7b-hf",
         messages=[
             {
-                "role": "user",
-                "content": [
+                "role":"user",
+                "content":[
                     {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{img_base64}"
+                        "type":"image_url",
+                        "image_url":{
+                            "url":f"data:image/jpeg;base64,{img_base64}"
                         }
                     },
                     {
-                        "type": "text",
-                        "text": """
-You are a date fruit disease expert.
-
-Analyze the date fruit image and return:
-
-Cause of spoilage:
-Type of problem:
-Visible signs:
-Advice for farmers:
-"""
+                        "type":"text",
+                        "text":"Analyze the date fruit and explain the spoilage."
                     }
                 ]
             }
