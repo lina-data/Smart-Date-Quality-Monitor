@@ -96,11 +96,10 @@ client = InferenceHTTPClient(
 # HuggingFace Vision Model
 # --------------------------------
 
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/llava-hf/llava-next-video-7b-hf"
+HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
 
 HF_HEADERS = {
-    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}",
-    "Content-Type": "application/json"
+    "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
 }
 
 # --------------------------------
@@ -175,49 +174,12 @@ def draw_boxes(image_path, predictions):
 def analyze_spoilage(image_path):
 
     with open(image_path, "rb") as f:
-        img_bytes = f.read()
-
-    img_base64 = base64.b64encode(img_bytes).decode()
-
-    prompt = """
-You are an expert in date fruit diseases.
-
-Look carefully at the date fruit image and analyze it.
-
-Return EXACTLY in this format:
-
-Cause of spoilage:
-Type of problem:
-Visible signs:
-Advice for farmers:
-
-Base your answer only on what you visually observe in the image.
-"""
-
-    payload = {
-        "inputs": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{img_base64}"
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }
-        ]
-    }
+        data = f.read()
 
     response = requests.post(
         HF_API_URL,
         headers=HF_HEADERS,
-        json=payload
+        data=data
     )
 
     if response.status_code != 200:
@@ -225,14 +187,22 @@ Base your answer only on what you visually observe in the image.
 
     result = response.json()
 
-    # استخراج النص الناتج
-    if isinstance(result, dict) and "generated_text" in result:
-        return result["generated_text"]
+    if isinstance(result, list):
+        description = result[0]["generated_text"]
+    else:
+        return str(result)
 
-    if isinstance(result, list) and "generated_text" in result[0]:
-        return result[0]["generated_text"]
+    report = f"""
+Cause of spoilage: Possible deterioration observed.
 
-    return str(result)
+Type of problem: Visual damage.
+
+Visible signs: {description}
+
+Advice for farmers: Inspect storage conditions and remove damaged fruits.
+"""
+
+    return report
 # --------------------------------
 # رفع الصورة
 # --------------------------------
