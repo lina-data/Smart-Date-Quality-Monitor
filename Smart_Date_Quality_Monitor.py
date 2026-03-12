@@ -3,86 +3,89 @@ import requests
 import base64
 from PIL import Image
 import cv2
-import time
-import os
 import numpy as np
+import time
 from inference_sdk import InferenceHTTPClient
 
-# --------------------------------
+# -----------------------------
 # إعداد الصفحة
-# --------------------------------
+# -----------------------------
 
 st.set_page_config(
     page_title="مراقب جودة التمور الذكي",
     layout="wide"
 )
 
-# --------------------------------
-# صورة الهيدر
-# --------------------------------
+# -----------------------------
+# CSS للتصميم
+# -----------------------------
 
-HEADER_IMAGE = "header3.jpeg"
+st.markdown("""
+<style>
 
-if os.path.exists(HEADER_IMAGE):
-    with open(HEADER_IMAGE, "rb") as f:
-        img = base64.b64encode(f.read()).decode()
-else:
-    img = ""
-
-st.markdown(f"""
-<div style="
-height:260px;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:36px;
-font-weight:bold;
-color:white;
+.ai-card{
+background:white;
+padding:20px;
 border-radius:15px;
-background:
-linear-gradient(to bottom,rgba(0,0,0,0) 50%,rgba(58,49,43,0.9) 100%),
-url('data:image/jpeg;base64,{img}');
-background-size:cover;
-background-position:center;">
-مراقب جودة التمور الذكي
-</div>
+box-shadow:0 6px 20px rgba(0,0,0,0.08);
+border-left:6px solid #E8C75B;
+margin-bottom:20px;
+}
+
+.ai-card h4{
+color:#3A312B;
+margin-bottom:10px;
+}
+
+.upload-box{
+background:white;
+padding:35px;
+border-radius:20px;
+border:2px dashed #E8C75B;
+text-align:center;
+margin-bottom:40px;
+}
+
+.center-title{
+text-align:center;
+margin-top:30px;
+margin-bottom:20px;
+}
+
+</style>
 """, unsafe_allow_html=True)
 
-# --------------------------------
-# Roboflow detection
-# --------------------------------
+# -----------------------------
+# العنوان
+# -----------------------------
+
+st.markdown(
+"<h1 style='text-align:center'> مراقب جودة التمور الذكي</h1>",
+unsafe_allow_html=True
+)
+
+# -----------------------------
+# Roboflow
+# -----------------------------
 
 client = InferenceHTTPClient(
     api_url="https://detect.roboflow.com",
     api_key="C1JPPLBr70pBEnS1eNl8"
 )
 
-# --------------------------------
-# HuggingFace BLIP
-# --------------------------------
+# -----------------------------
+# HuggingFace Idefics2
+# -----------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-base"
+HF_API_URL = "https://api-inference.huggingface.co/models/HuggingFaceM4/idefics2-8b-chatty"
 
 HF_HEADERS = {
     "Authorization": f"Bearer {st.secrets['HF_TOKEN']}"
 }
 
-def describe_image(image_path):
-
-    with open(image_path, "rb") as f:
-        data = f.read()
-
-    response = requests.post(HF_API_URL, headers=HF_HEADERS, data=data)
-
-    if response.status_code == 200:
-        return response.json()[0]["generated_text"]
-
-    return "Unable to analyze image"
-
-
-# --------------------------------
+# -----------------------------
 # كشف التمور
-# --------------------------------
+# -----------------------------
 
 def detect_dates(image_path):
 
@@ -93,10 +96,9 @@ def detect_dates(image_path):
 
     return result.get("predictions", [])
 
-
-# --------------------------------
+# -----------------------------
 # رسم المربعات
-# --------------------------------
+# -----------------------------
 
 def draw_boxes(image_path, predictions):
 
@@ -146,85 +148,205 @@ def draw_boxes(image_path, predictions):
 
     return img,bad_crops,good_count,bad_count
 
+# -----------------------------
+# تحليل الفساد
+# -----------------------------
 
-# --------------------------------
+def analyze_spoilage(image_path):
+
+    with open(image_path,"rb") as f:
+        image_bytes = f.read()
+
+    image_base64 = base64.b64encode(image_bytes).decode()
+
+    prompt = """
+You are a date fruit disease expert.
+
+Analyze the date fruit image and answer:
+
+Cause of spoilage:
+Type of problem:
+Visible signs:
+Advice for farmers:
+"""
+
+    payload = {
+        "inputs":{
+            "image":image_base64,
+            "text":prompt
+        }
+    }
+
+    response = requests.post(
+        HF_API_URL,
+        headers=HF_HEADERS,
+        json=payload
+    )
+
+    if response.status_code != 200:
+        return "Image analysis failed"
+
+    result = response.json()
+
+    if isinstance(result,list):
+        return result[0]["generated_text"]
+
+    return str(result)
+
+# -----------------------------
 # رفع الصورة
-# --------------------------------
+# -----------------------------
 
-st.subheader("📤 ارفع صورة للتمور")
+st.markdown("""
+<div class="upload-box">
+<h3>📤 ارفع صورة للتمور لتحليل الجودة</h3>
+</div>
+""", unsafe_allow_html=True)
 
-file=st.file_uploader("Upload image",type=["jpg","png","jpeg"])
+col1,col2 = st.columns(2)
+
+with col1:
+    file = st.file_uploader(
+        "رفع صورة",
+        type=["jpg","png","jpeg"]
+    )
+
+with col2:
+    camera = st.camera_input(
+        "التقاط صورة"
+    )
 
 image=None
 
 if file:
-    image=Image.open(file).convert("RGB")
+    image = Image.open(file).convert("RGB")
 
+elif camera:
+    image = Image.open(camera).convert("RGB")
 
-# --------------------------------
+# -----------------------------
 # تحليل الصورة
-# --------------------------------
+# -----------------------------
 
 if image:
 
     IMAGE_PATH="date.jpg"
     image.save(IMAGE_PATH)
 
-    col1,col2=st.columns(2)
+    col1,col2 = st.columns(2)
 
     with col1:
         st.image(image,caption="الصورة الأصلية")
 
-    with st.spinner("جاري تحليل الصورة..."):
+    with st.spinner("🤖 الذكاء الاصطناعي يحلل الصورة..."):
 
-        progress=st.progress(0)
+        progress = st.progress(0)
 
         for i in range(100):
             time.sleep(0.01)
             progress.progress(i+1)
 
-        predictions=detect_dates(IMAGE_PATH)
+        predictions = detect_dates(IMAGE_PATH)
 
-        annotated,bad_dates,good_count,bad_count=draw_boxes(IMAGE_PATH,predictions)
+        annotated,bad_dates,good_count,bad_count = draw_boxes(
+            IMAGE_PATH,
+            predictions
+        )
 
-        annotated=cv2.cvtColor(annotated,cv2.COLOR_BGR2RGB)
+        annotated = cv2.cvtColor(annotated,cv2.COLOR_BGR2RGB)
 
     with col2:
         st.image(annotated,caption="نتيجة الكشف")
 
-    # --------------------------------
+    # -----------------------------
     # النتائج
-    # --------------------------------
+    # -----------------------------
 
-    st.subheader("📊 النتائج")
+    st.markdown(
+    "<h2 class='center-title'>📊 النتائج</h2>",
+    unsafe_allow_html=True
+    )
 
-    total=good_count+bad_count
+    total = good_count + bad_count
 
-    quality=0
+    quality = 0
     if total>0:
-        quality=(good_count/total)*100
+        quality = (good_count/total)*100
 
-    colA,colB,colC=st.columns(3)
+    colA,colB,colC = st.columns(3)
 
     colA.metric("التمور الجيدة",good_count)
     colB.metric("التمور الفاسدة",bad_count)
     colC.metric("جودة المحصول",f"{quality:.1f}%")
 
-    # --------------------------------
-    # تحليل التمور الفاسدة
-    # --------------------------------
+    # -----------------------------
+    # تحليل الفساد
+    # -----------------------------
 
     if bad_dates:
 
-        st.subheader("🧠 تحليل التمور الفاسدة")
+        st.markdown(
+        "<h2 class='center-title'>🧠 تقرير الذكاء الاصطناعي</h2>",
+        unsafe_allow_html=True
+        )
 
         for img_path in bad_dates:
 
-            description = describe_image(img_path)
+            report = analyze_spoilage(img_path)
 
-            st.image(img_path,width=200)
+            cause=""
+            problem=""
+            signs=""
+            advice=""
 
-            st.markdown(f"""
-**الوصف:**
-{description}
-""")
+            for line in report.split("\n"):
+
+                line=line.lower()
+
+                if "cause" in line:
+                    cause=line.split(":")[-1]
+
+                elif "type" in line:
+                    problem=line.split(":")[-1]
+
+                elif "visible" in line:
+                    signs=line.split(":")[-1]
+
+                elif "advice" in line:
+                    advice=line.split(":")[-1]
+
+            col1,col2 = st.columns(2)
+
+            with col1:
+                st.markdown(f"""
+                <div class="ai-card">
+                <h4>سبب الفساد</h4>
+                {cause}
+                </div>
+                """,unsafe_allow_html=True)
+
+            with col2:
+                st.markdown(f"""
+                <div class="ai-card">
+                <h4>نوع المشكلة</h4>
+                {problem}
+                </div>
+                """,unsafe_allow_html=True)
+
+            col3,col4 = st.columns(2)
+
+            with col3:
+                st.markdown(f"""
+                <div class="ai-card">
+                <h4>العلامات الظاهرة</h4>
+                {signs}
+                </div>
+                """,unsafe_allow_html=True)
+
+            with col4:
+                st.markdown(f"""
+                <div class="ai-card">
+                <h4>نصيحة للمزارعين</h4>
+                {advice}
+                </div>
+                """,unsafe_allow_html=True)
