@@ -74,6 +74,18 @@ margin-top:30px;
 margin-bottom:20px;
 }
 
+.section-divider{
+margin:50px 0;
+height:1px;
+background:linear-gradient(
+to right,
+transparent,
+#E8C75B,
+transparent
+);
+
+}
+
 </style>
 """, unsafe_allow_html=True)
 
