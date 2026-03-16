@@ -192,7 +192,7 @@ def draw_boxes(image_path, predictions):
 
     return img,bad_crops,good_count,bad_count
 
-   st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)####
+    st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)####
 # -----------------------------
 # تحليل الفساد
 # -----------------------------
@@ -243,7 +243,7 @@ def analyze_spoilage(image_path):
     advice="يفضل إزالة التمور المتضررة وتحسين ظروف التخزين وتقليل الرطوبة."
 
     return cause,problem,signs,advice
-       st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)####
+    st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)####
 
 # -----------------------------
 # رفع الصورة
@@ -270,7 +270,7 @@ if file:
 
 elif camera:
     image=Image.open(camera).convert("RGB")
-   st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)####
+    st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)####
 
 # -----------------------------
 # تحليل الصورة
