@@ -114,6 +114,9 @@ def detect_dates(image_path):
 # رسم المربعات
 # -----------------------------
 
+# رسم المربعات
+# -----------------------------
+
 def draw_boxes(image_path, predictions):
 
     img = cv2.imread(image_path)
@@ -130,6 +133,7 @@ def draw_boxes(image_path, predictions):
         h=int(p["height"])
 
         label=p["class"]
+        conf=p["confidence"]
 
         x1=int(x-w/2)
         y1=int(y-h/2)
@@ -158,10 +162,25 @@ def draw_boxes(image_path, predictions):
         else:
             good_count+=1
 
+        # رسم المربع
         cv2.rectangle(img,(x1,y1),(x2,y2),color,2)
 
-    return img,bad_crops,good_count,bad_count
+        # كتابة label + confidence فوق المربع
+        text = f"{label} {conf*100:.1f}%"
 
+        y_text = max(20, y1-10)
+
+        cv2.putText(
+            img,
+            text,
+            (x1, y_text),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            color,
+            2
+        )
+
+    return img,bad_crops,good_count,bad_count
 # -----------------------------
 # تحليل الفساد
 # -----------------------------
