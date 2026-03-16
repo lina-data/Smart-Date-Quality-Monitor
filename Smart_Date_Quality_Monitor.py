@@ -114,8 +114,6 @@ def detect_dates(image_path):
 # رسم المربعات
 # -----------------------------
 
-# رسم المربعات
-# -----------------------------
 
 def draw_boxes(image_path, predictions):
 
@@ -300,7 +298,10 @@ if image:
 
     colA.metric("التمور الجيدة",good_count)
     colB.metric("التمور الفاسدة",bad_count)
-    colC.metric("جودة المحصول",f"{quality:.1f}%")
+    quality_text = f"{quality:.1f}%"
+
+    colC.metric("جودة المحصول", quality_text)
+    #colC.metric("جودة المحصول",f"{quality:.1f}%")
 
 # -----------------------------
 # تحليل التمور الفاسدة
