@@ -303,7 +303,7 @@ if image:
             predictions
         )
 
-        st.image(annotated, caption="نتيجة الكشف")
+        #st.image(annotated, caption="نتيجة الكشف")
 
     with col2:
         st.image(annotated,caption="نتيجة الكشف")
