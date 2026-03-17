@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import time
 import os
-from inference_sdk import InferenceHTTPClient
+#from inference_sdk import InferenceHTTPClient
 
 st.set_page_config(
     page_title="مراقب جودة التمور الذكي",
@@ -95,10 +95,10 @@ transparent
 # Roboflow
 # -----------------------------
 
-rf_client = InferenceHTTPClient(
-    api_url="https://detect.roboflow.com",
-    api_key="C1JPPLBr70pBEnS1eNl8"
-)
+#rf_client = InferenceHTTPClient(
+   # api_url="https://detect.roboflow.com",
+    #api_key="C1JPPLBr70pBEnS1eNl8"
+#)
 
 # -----------------------------
 # HuggingFace BLIP
@@ -117,10 +117,25 @@ HF_HEADERS = {
 
 def detect_dates(image_path):
 
-    result = rf_client.infer(
-        image_path,
-        model_id="dates-jxszk/1"
+    with open(image_path, "rb") as f:
+        img_bytes = f.read()
+
+    response = requests.post(
+        "https://detect.roboflow.com/dates-jxszk/1",
+        params={
+            "api_key": "C1JPPLBr70pBEnS1eNl8"
+        },
+        files={
+            "file": img_bytes
+        },
+        timeout=60
     )
+
+    if response.status_code != 200:
+        st.error("خطأ في الاتصال بـ Roboflow")
+        return []
+
+    result = response.json()
 
     return result.get("predictions", [])
 
