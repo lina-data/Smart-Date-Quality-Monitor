@@ -144,71 +144,60 @@ def detect_dates(image_path):
 # -----------------------------
 
 
+from PIL import Image, ImageDraw
+
 def draw_boxes(image_path, predictions):
 
-    img = cv2.imread(image_path)
+    img = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
 
-    bad_crops=[]
-    good_count=0
-    bad_count=0
+    bad_crops = []
+    good_count = 0
+    bad_count = 0
 
-    for i,p in enumerate(predictions):
+    width, height = img.size
 
-        x=int(p["x"])
-        y=int(p["y"])
-        w=int(p["width"])
-        h=int(p["height"])
+    for i, p in enumerate(predictions):
 
-        label=p["class"]
-        conf=p["confidence"]
+        x = int(p["x"])
+        y = int(p["y"])
+        w = int(p["width"])
+        h = int(p["height"])
 
-        x1=int(x-w/2)
-        y1=int(y-h/2)
-        x2=int(x+w/2)
-        y2=int(y+h/2)
+        label = p["class"]
+        conf = p["confidence"]
 
-        x1=max(0,x1)
-        y1=max(0,y1)
-        x2=min(img.shape[1],x2)
-        y2=min(img.shape[0],y2)
+        x1 = int(x - w/2)
+        y1 = int(y - h/2)
+        x2 = int(x + w/2)
+        y2 = int(y + h/2)
 
-        color=(0,255,0)
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = min(width, x2)
+        y2 = min(height, y2)
+
+        color = "green"
 
         if "bad" in label.lower():
 
-            color=(255,0,0)
-            bad_count+=1
+            color = "red"
+            bad_count += 1
 
-            crop=img[y1:y2,x1:x2]
-
-            filename=f"bad_date_{i}.jpg"
-            cv2.imwrite(filename,crop)
+            crop = img.crop((x1, y1, x2, y2))
+            filename = f"bad_date_{i}.jpg"
+            crop.save(filename)
 
             bad_crops.append(filename)
 
         else:
-            good_count+=1
+            good_count += 1
 
-        # رسم المربع
-        cv2.rectangle(img,(x1,y1),(x2,y2),color,2)
+        draw.rectangle([x1, y1, x2, y2], outline=color, width=3)
 
-        # كتابة label + confidence فوق المربع
-        text = f"{label} {conf*100:.1f}%"
+        draw.text((x1, y1-10), f"{label} {conf:.2f}", fill=color)
 
-        y_text = max(20, y1-10)
-
-        cv2.putText(
-            img,
-            text,
-            (x1, y_text),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            color,
-            2
-        )
-
-    return img,bad_crops,good_count,bad_count
-
+    return img, bad_crops, good_count, bad_count
     st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)####
 # -----------------------------
 # تحليل الفساد
@@ -314,7 +303,7 @@ if image:
             predictions
         )
 
-        annotated=cv2.cvtColor(annotated,cv2.COLOR_BGR2RGB)
+        st.image(annotated, caption="نتيجة الكشف")
 
     with col2:
         st.image(annotated,caption="نتيجة الكشف")
