@@ -2,5 +2,5 @@ streamlit
 requests
 Pillow
 numpy
-opencv-python-headless
+opencv-python-headless==4.8.1.78
 inference-sdk
